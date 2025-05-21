@@ -4,7 +4,6 @@ from Crypto.PublicKey import RSA
 from Crypto.Signature import pkcs1_15
 from Crypto.Hash import SHA256
 import json
-
 class Transaction:
     def __init__(self, sender, receiver, amount, timestamp=None):
         if not isinstance(amount, (int, float)) or amount <= 0:
@@ -17,11 +16,9 @@ class Transaction:
         self.timestamp = timestamp or time.time()
         self.signature = None
         self.hash = self.calculate_hash()
-
     def calculate_hash(self):
         data = f"{self.sender}{self.receiver}{self.amount}{self.timestamp}"
         return hashlib.sha256(data.encode()).hexdigest()
-
     def sign_transaction(self, private_key):
         try:
             key = RSA.import_key(private_key)
@@ -29,7 +26,6 @@ class Transaction:
             self.signature = pkcs1_15.new(key).sign(h)
         except Exception as e:
             raise ValueError(f"Failed to sign transaction: {e}")
-
     def verify_signature(self, public_key):
         if not self.signature:
             return False
@@ -40,7 +36,6 @@ class Transaction:
             return True
         except:
             return False
-
     def is_valid(self):
         return (isinstance(self.amount, (int, float)) and self.amount > 0 and
                 self.sender and self.receiver and self.hash == self.calculate_hash())
@@ -69,3 +64,32 @@ class Block:
     def is_valid(self):
         return self.hash == self.calculate_hash() and all(t.is_valid() for t in self.transactions)
 
+class Blockchain:
+    def __init__(self, difficulty=4):
+        self.chain = [self.create_genesis_block()]
+        self.difficulty = difficulty
+        self.transaction_pool = TransactionPool()
+
+    def create_genesis_block(self):
+        return Block(0, [], "0")
+
+    def get_latest_block(self):
+        return self.chain[-1]
+
+    def add_block(self, transactions):
+        block = Block(len(self.chain), transactions, self.get_latest_block().hash)
+        block.mine_block(self.difficulty)
+        if block.is_valid():
+            self.chain.append(block)
+            return True
+        return False
+
+    def is_chain_valid(self):
+        for i in range(1, len(self.chain)):
+            current = self.chain[i]
+            previous = self.chain[i-1]
+            if not current.is_valid():
+                return False
+            if current.previous_hash != previous.hash:
+                return False
+        return True
