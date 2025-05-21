@@ -50,8 +50,15 @@ class Block:
         self.hash = self.calculate_hash()
 
     def calculate_hash(self):
+        # Convertir les signatures en chaînes hexadécimales pour la sérialisation JSON
+        transactions_data = []
+        for t in self.transactions:
+            t_dict = t.__dict__.copy()
+            if t_dict['signature'] is not None:
+                t_dict['signature'] = t_dict['signature'].hex()
+            transactions_data.append(t_dict)
         data = (f"{self.index}{self.previous_hash}{self.timestamp}{self.nonce}"
-                f"{json.dumps([t.__dict__ for t in self.transactions], sort_keys=True)}")
+                f"{json.dumps(transactions_data, sort_keys=True)}")
         return hashlib.sha256(data.encode()).hexdigest()
 
     def mine_block(self, difficulty):
@@ -59,11 +66,10 @@ class Block:
         while self.hash[:difficulty] != target:
             self.nonce += 1
             self.hash = self.calculate_hash()
-        print(f"Block mined: {self.hash}")
+        print(f"Bloc miné: {self.hash}")
 
     def is_valid(self):
         return self.hash == self.calculate_hash() and all(t.is_valid() for t in self.transactions)
-
 
 class Blockchain:
     def __init__(self, difficulty=4):
