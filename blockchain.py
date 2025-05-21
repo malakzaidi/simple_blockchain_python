@@ -69,7 +69,8 @@ class Block:
         print(f"Bloc miné: {self.hash}")
 
     def is_valid(self):
-        return self.hash == self.calculate_hash() and all(t.is_valid() for t in self.transactions)
+        return (self.hash == self.calculate_hash()
+                and all(t.is_valid() for t in self.transactions))
 
 class Blockchain:
     def __init__(self, difficulty=4):
